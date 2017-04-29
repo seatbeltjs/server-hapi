@@ -1,0 +1,16 @@
+{
+  "name": "@seatbelt/server-hapi",
+  "version": "0.0.1",
+  "description": "SeatbeltJS hapi server",
+  "main": "index.ts",
+  "keywords": [
+    "seatbelt",
+    "hapi",
+    "server"
+  ],
+  "author": "Thomas Meadows",
+  "license": "MIT",
+  "dependencies": {
+    "hapi": "^16.1.1"
+  }
+}
