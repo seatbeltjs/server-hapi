@@ -1,4 +1,4 @@
-import { Log } from '../../log';
+import { Log } from '../core/src/log';
 
 export function DHapi(): any {
   return function(OriginalClassConstructor: any) {
