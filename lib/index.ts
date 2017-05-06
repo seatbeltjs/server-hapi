@@ -1,5 +1,3 @@
-import { Log } from '../core/src/log';
-
 export function DHapi(): any {
   return function(OriginalClassConstructor: any) {
 
@@ -7,20 +5,17 @@ export function DHapi(): any {
       const origin = new OriginalClassConstructor();
       origin.__seatbelt__ = 'server';
       origin.__seatbelt_strap__ = function(classesByType: any) {
-        this.log = new Log('Hapi');
         this.hapi = require('hapi');
         this.app = new this.hapi.Server();
         this.port = process.env.port || 3000;
-        this.log = new Log('Express');
         this.__controller_wrapper__ = function (controllerFunctions: Function[], req: any, reply: Function) {
           const nextWrapper = (i: number): any => {
             if (!controllerFunctions[i]) {
               return reply({status: 'request failed'}).code(500);
             }
             return controllerFunctions[i]({
-              req,
-              reply,
-              next: () => nextWrapper(++i),
+              send: (...params: any[]) => reply(...params),
+              next: () => nextWrapper(1 + i),
               params: Object.assign(
                 {},
                 typeof req.params === 'object' ? req.params : {},
@@ -30,6 +25,9 @@ export function DHapi(): any {
                 ,
                 typeof req.query === 'object' ? req.query : {}
               )
+            }, {
+              req,
+              reply
             });
           };
           nextWrapper(0);
@@ -70,7 +68,7 @@ export function DHapi(): any {
           if (err) {
             throw err;
           }
-          this.log.system(`Server running at: ${this.app.info.uri}`);
+          console.log(`Server running at: ${this.app.info.uri}`);
         });
       };
       return origin;

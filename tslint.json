@@ -15,7 +15,7 @@
     "eofline": false,
     "export-name": false,
     "forin": false,
-    "function-name": true,
+    "function-name": false,
     "import-name": false,
     "indent": [true, "spaces"],
     "interface-name": false,
@@ -84,7 +84,7 @@
     "no-for-in": true,
     "no-for-in-array": false,
     "no-function-constructor-with-string-args": true,
-    "no-function-expression": true,
+    "no-function-expression": false,
     "no-http-string": [
       true,
       "http://www.example.com/?.*",
