@@ -1,3 +1,5 @@
+import { Server } from 'hapi';
+
 export function DHapi(): any {
   return function(OriginalClassConstructor: new() => any) {
     return class extends OriginalClassConstructor {
@@ -6,16 +8,15 @@ export function DHapi(): any {
       constructor() {
         super();
         this.__seatbelt__ = 'server';
-        this.__seatbelt_strap__ = function(classesByType: any) {
-          this.hapi = require('hapi');
-          this.app = new this.hapi.Server();
+        this.__seatbelt_strap__ = function(routes: any[]) {
+          this.server = new Server();
           this.port = process.env.port || 3000;
-          this.__controller_wrapper__ = function (controllerFunction: Function, req: any, reply: Function) {
+          this.__controller_wrapper__ = function (route: any, req: any, reply: Function) {
             const nextWrapper = (i: number): any => {
-              if (!controllerFunction) {
+              if (!route.controller) {
                 return reply({status: 'request failed'}).code(500);
               }
-              return controllerFunction({
+              return route.controller({
                 send: (...params: any[]) => reply(...params),
                 params: Object.assign(
                   {},
@@ -33,29 +34,27 @@ export function DHapi(): any {
             };
             nextWrapper(0);
           };
+          this.server.connection({ port: this.port });
 
-          this.app.connection({ port: this.port });
-
-          if (classesByType['route']) {
-            classesByType['route'].forEach((route: any) => {
-
+          if (routes && Array.isArray(routes)) {
+            routes.forEach((route: any) => {
               route['__seatbelt_config__'].type.forEach((eachType: string) => {
                 route['__seatbelt_config__'].path.forEach((eachPath: string) => {
-                  this.app.route({
+                  this.server.route({
                     method: eachType.toLowerCase(),
                     path: eachPath,
-                    handler: (request: any, reply: any) => this.__controller_wrapper__(route.controller, request, reply)
+                    handler: (request: any, reply: any) => this.__controller_wrapper__(route, request, reply)
                   });
                 });
               });
             });
           }
 
-          this.app.start((err: Error) => {
+          this.server.start((err: Error) => {
             if (err) {
               throw err;
             }
-            console.log(`Server running at: ${this.app.info.uri}`);
+            console.log(`Server running at: ${this.server.info.uri}`);
           });
         };
       };

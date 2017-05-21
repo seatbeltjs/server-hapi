@@ -9,6 +9,7 @@
     "sourceMap": false,
     "inlineSources": false,
     "experimentalDecorators": true,
+    "noImplicitUseStrict": true,
     "allowSyntheticDefaultImports": true,
     "types": [
       "node",

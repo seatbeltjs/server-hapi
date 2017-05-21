@@ -2,7 +2,8 @@
   "name": "@seatbelt/server-hapi",
   "version": "0.0.1",
   "description": "SeatbeltJS hapi server",
-  "main": "index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.ts",
   "keywords": [
     "seatbelt",
     "hapi",
@@ -15,6 +16,7 @@
     "hapi": "^16.1.1"
   },
   "devDependencies": {
+    "@types/hapi": "^16.1.0",
     "@types/node": "^7.0.15",
     "tslint": "^4.5.1",
     "tslint-eslint-rules": "^3.5.0",
