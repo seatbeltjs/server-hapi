@@ -1,11 +1,15 @@
-import { Server } from 'hapi';
+import * as hapi from 'hapi';
+import { Server } from '@seatbelt/core/lib/server';
 import { Log } from '@seatbelt/core';
-export declare class HapiServer {
-    log: Log;
-    server: Server;
-    port: number;
-    conformHapiControllerToSeatbeltController: Function;
-    config: Function;
-    init: Function;
+export interface IServerConfig {
+    port?: number;
 }
-export declare const server: HapiServer;
+export declare class HapiServer implements Server.BaseServer {
+    log: Log;
+    server: hapi.Server;
+    port: number;
+    constructor(config?: IServerConfig);
+    conformServerControllerToSeatbeltController: Function;
+    config: Server.Config;
+    init: Server.Init;
+}

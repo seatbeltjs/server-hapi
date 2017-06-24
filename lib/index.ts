@@ -1,51 +1,73 @@
-import { Server } from 'hapi';
-import { DServerRegister, IServerRequest, IServerResponse, IServerRoute, Log } from '@seatbelt/core';
+import * as hapi from 'hapi';
+import { Server } from '@seatbelt/core/lib/server';
+import { Log } from '@seatbelt/core';
 
-@DRegisterServer()
-export class HapiServer {
+export interface IServerConfig {
+  port?: number;
+}
+
+@Server.Register()
+export class HapiServer implements Server.BaseServer {
   public log: Log = new Log('HapiServer');
-  public server: Server = new Server();
+  public server: hapi.Server = new hapi.Server();
   public port: number = process.env.port || 3000;
-  public conformHapiControllerToSeatbeltController: Function = function (route: any, req: any, reply: Function) {
-    const nextWrapper = (i: number): any => {
-      if (!route.controller) {
-        return reply({status: 'request failed'}).code(500);
+
+  public constructor(config?: IServerConfig) {
+    if (config) {
+      if (config.port && typeof config.port === 'number') {
+        this.port = config.port;
       }
-      return route.controller({
-        send: (...params: any[]) => reply(...params),
-        params: Object.assign(
-          {},
-          typeof req.params === 'object' ? req.params : {},
-          typeof req.body === 'object' ? req.body : {}
-          ,
-          typeof req.payload === 'object' ? req.payload : {}
-          ,
-          typeof req.query === 'object' ? req.query : {}
-        )
-      }, {
+    }
+  }
+
+  public conformServerControllerToSeatbeltController: Function = function (route: Server.Route, req: hapi.Request, reply: hapi.ReplyNoContinue) {
+    if (!route.controller) {
+      return reply({status: 'request failed'}).code(500);
+    }
+
+    const seatbeltResponse: Server.Response = {
+      send: (status: number, body: Object) => {
+         return reply(body).code(status);
+      }
+    };
+
+    const seatbeltRequest: Server.Request = {
+      allParams: Object.assign(
+        {},
+        typeof req.params === 'object' ? req.params : {},
+        typeof req.payload === 'object' ? req.payload : {},
+        typeof req.query === 'object' ? req.query : {}
+      )
+    };
+
+    return route.controller(
+      seatbeltRequest,
+      seatbeltResponse,
+      {
         req,
         reply
-      });
-    };
-    nextWrapper(0);
+     }
+    );
   };
-  public config: Function = function(routes: any[]) {
+
+  public config: Server.Config = function(routes: Server.Route[]) {
     this.server.connection({ port: this.port });
     if (routes && Array.isArray(routes)) {
-      routes.forEach((route: any) => {
-        route['__seatbelt_config__'].type.forEach((eachType: string) => {
-          route['__seatbelt_config__'].path.forEach((eachPath: string) => {
+      routes.forEach((route: Server.Route) => {
+        route['__seatbeltConfig'].type.forEach((eachType: string) => {
+          route['__seatbeltConfig'].path.forEach((eachPath: string) => {
             this.server.route({
               method: eachType.toLowerCase(),
               path: eachPath,
-              handler: (request: any, reply: any) => this.conformHapiControllerToSeatbeltController(route, request, reply)
+              handler: (request: hapi.Request, reply: hapi.Response) => this.conformServerControllerToSeatbeltController(route, request, reply)
             });
           });
         });
       });
     }
   };
-  public init: Function = function() {
+
+  public init: Server.Init = function() {
     this.server.start((err: Error) => {
       if (err) {
         throw err;
@@ -54,5 +76,3 @@ export class HapiServer {
     });
   };
 }
-
-export const server: HapiServer = new HapiServer();
