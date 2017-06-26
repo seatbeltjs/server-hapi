@@ -1,14 +1,16 @@
 import * as hapi from 'hapi';
-import { Server } from '@seatbelt/core/lib/server';
+import { ServerPlugin } from '@seatbelt/core/plugins';
 import { Log } from '@seatbelt/core';
 
 export interface IServerConfig {
   port?: number;
 }
 
-@Server.Register()
-export class HapiServer implements Server.BaseServer {
-  public log: Log = new Log('HapiServer');
+@ServerPlugin.Register({
+  name: 'HapiServer'
+})
+export class HapiServer implements ServerPlugin.BaseServer {
+  private log: Log = new Log('HapiServer');
   public server: hapi.Server = new hapi.Server();
   public port: number = process.env.port || 3000;
 
@@ -20,18 +22,18 @@ export class HapiServer implements Server.BaseServer {
     }
   }
 
-  public conformServerControllerToSeatbeltController: Function = function (route: Server.Route, req: hapi.Request, reply: hapi.ReplyNoContinue) {
+  public conformServerControllerToSeatbeltController: Function = function (route: ServerPlugin.Route, req: hapi.Request, reply: hapi.ReplyNoContinue) {
     if (!route.controller) {
       return reply({status: 'request failed'}).code(500);
     }
 
-    const seatbeltResponse: Server.Response = {
+    const seatbeltResponse: ServerPlugin.Response = {
       send: (status: number, body: Object) => {
          return reply(body).code(status);
       }
     };
 
-    const seatbeltRequest: Server.Request = {
+    const seatbeltRequest: ServerPlugin.Request = {
       allParams: Object.assign(
         {},
         typeof req.params === 'object' ? req.params : {},
@@ -50,13 +52,15 @@ export class HapiServer implements Server.BaseServer {
     );
   };
 
-  public config: Server.Config = function(routes: Server.Route[]) {
+  public config: ServerPlugin.Config = function(seatbelt: any) {
+    const routes: ServerPlugin.Route[] = seatbelt.plugins.route;
+
     this.server.connection({ port: this.port });
     if (routes && Array.isArray(routes)) {
-      routes.forEach((route: Server.Route) => {
-        route['__seatbeltConfig'].type.forEach((eachType: string) => {
-          route['__seatbeltConfig'].path.forEach((eachPath: string) => {
-            this.server.route({
+      routes.forEach((route: ServerPlugin.Route) => {
+        route['__routeConfig'].type.forEach((eachType: string) => {
+          route['__routeConfig'].path.forEach((eachPath: string) => {
+            this.ServerPlugin.route({
               method: eachType.toLowerCase(),
               path: eachPath,
               handler: (request: hapi.Request, reply: hapi.Response) => this.conformServerControllerToSeatbeltController(route, request, reply)
@@ -67,12 +71,12 @@ export class HapiServer implements Server.BaseServer {
     }
   };
 
-  public init: Server.Init = function() {
+  public init: ServerPlugin.Init = function() {
     this.server.start((err: Error) => {
       if (err) {
         throw err;
       }
-      this.log.system(`Server running at: ${this.server.info.uri}`);
+      this.log.system(`Server running at: ${this.ServerPlugin.info.uri}`);
     });
   };
 }
