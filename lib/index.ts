@@ -1,5 +1,6 @@
 import * as hapi from 'hapi';
 import { ServerPlugin } from '@seatbelt/core/plugins';
+import { Request, Response } from '@seatbelt/core';
 import { Log } from '@seatbelt/core';
 
 export interface IServerConfig {
@@ -27,13 +28,20 @@ export class HapiServer implements ServerPlugin.BaseServer {
       return reply({status: 'request failed'}).code(500);
     }
 
-    const seatbeltResponse: ServerPlugin.Response = {
-      send: (status: number, body: Object) => {
-         return reply(body).code(status);
-      }
+    const send = (status: number, body: Object) => reply(body).code(status);
+
+    const seatbeltResponse: Response.Base = {
+      send,
+      ok: (body: Object) => send(200, body),
+      created: (body: Object) => send(201, body),
+      badRequest: (body: Object) => send(400, body),
+      unauthorized: (body: Object) => send(401, body),
+      forbidden: (body: Object) => send(403, body),
+      notFound: (body: Object) => send(404, body),
+      serverError: (body: Object) => send(500, body)
     };
 
-    const seatbeltRequest: ServerPlugin.Request = {
+    const seatbeltRequest: Request.Base = {
       allParams: Object.assign(
         {},
         typeof req.params === 'object' ? req.params : {},
@@ -60,7 +68,7 @@ export class HapiServer implements ServerPlugin.BaseServer {
       routes.forEach((route: ServerPlugin.Route) => {
         route['__routeConfig'].type.forEach((eachType: string) => {
           route['__routeConfig'].path.forEach((eachPath: string) => {
-            this.ServerPlugin.route({
+            this.server.route({
               method: eachType.toLowerCase(),
               path: eachPath,
               handler: (request: hapi.Request, reply: hapi.Response) => this.conformServerControllerToSeatbeltController(route, request, reply)
@@ -76,7 +84,7 @@ export class HapiServer implements ServerPlugin.BaseServer {
       if (err) {
         throw err;
       }
-      this.log.system(`Server running at: ${this.ServerPlugin.info.uri}`);
+      this.log.system(`Server running at: ${this.server.info.uri}`);
     });
   };
 }
