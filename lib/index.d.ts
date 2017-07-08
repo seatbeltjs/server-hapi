@@ -3,7 +3,7 @@ import { ServerPlugin } from '@seatbelt/core/plugins';
 export interface IServerConfig {
     port?: number;
 }
-export declare class HapiServer implements ServerPlugin.BaseServer {
+export declare class HapiServer implements ServerPlugin.BaseInterface {
     private log;
     server: hapi.Server;
     port: number;

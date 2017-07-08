@@ -1,7 +1,6 @@
 import * as hapi from 'hapi';
 import { ServerPlugin } from '@seatbelt/core/plugins';
-import { Request, Response } from '@seatbelt/core';
-import { Log } from '@seatbelt/core';
+import { Log, Route } from '@seatbelt/core';
 
 export interface IServerConfig {
   port?: number;
@@ -10,7 +9,7 @@ export interface IServerConfig {
 @ServerPlugin.Register({
   name: 'HapiServer'
 })
-export class HapiServer implements ServerPlugin.BaseServer {
+export class HapiServer implements ServerPlugin.BaseInterface {
   private log: Log = new Log('HapiServer');
   public server: hapi.Server = new hapi.Server();
   public port: number = process.env.port || 3000;
@@ -23,14 +22,14 @@ export class HapiServer implements ServerPlugin.BaseServer {
     }
   }
 
-  public conformServerControllerToSeatbeltController: Function = function (route: ServerPlugin.Route, req: hapi.Request, reply: hapi.ReplyNoContinue) {
+  public conformServerControllerToSeatbeltController: Function = function (route: ServerPlugin.RouteInterface, req: hapi.Request, reply: hapi.ReplyNoContinue) {
     if (!route.controller) {
       return reply({status: 'request failed'}).code(500);
     }
 
     const send = (status: number, body: Object) => reply(body).code(status);
 
-    const seatbeltResponse: Response.Base = {
+    const seatbeltResponse: Route.Response.BaseInterface = {
       send,
       ok: (body: Object) => send(200, body),
       created: (body: Object) => send(201, body),
@@ -41,7 +40,7 @@ export class HapiServer implements ServerPlugin.BaseServer {
       serverError: (body: Object) => send(500, body)
     };
 
-    const seatbeltRequest: Request.Base = {
+    const seatbeltRequest: Route.Request.BaseInterface = {
       allParams: Object.assign(
         {},
         typeof req.params === 'object' ? req.params : {},
@@ -60,12 +59,12 @@ export class HapiServer implements ServerPlugin.BaseServer {
     );
   };
 
-  public config: ServerPlugin.Config = function(seatbelt: any) {
-    const routes: ServerPlugin.Route[] = seatbelt.plugins.route;
+  public config: ServerPlugin.Config = function(seatbelt: any, cb: Function) {
+    const routes: ServerPlugin.RouteInterface[] = seatbelt.plugins.route;
 
     this.server.connection({ port: this.port });
     if (routes && Array.isArray(routes)) {
-      routes.forEach((route: ServerPlugin.Route) => {
+      routes.forEach((route: ServerPlugin.RouteInterface) => {
         route['__routeConfig'].type.forEach((eachType: string) => {
           route['__routeConfig'].path.forEach((eachPath: string) => {
             this.server.route({
@@ -77,6 +76,7 @@ export class HapiServer implements ServerPlugin.BaseServer {
         });
       });
     }
+    cb();
   };
 
   public init: ServerPlugin.Init = function() {
